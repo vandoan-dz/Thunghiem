@@ -1,0 +1,356 @@
+-- SCRIPT CHUẨN QUY TẮC: NÚT VDZ & MENU BÉ & NÚT TRÒN DẤU CỘNG ĐỂ DI CHUYỂN MENU
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- 1. Giao diện chính
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VDZ_DragHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = playerGui
+
+-- 2. Nút UI Chữ Nhật Bé "VDZ" (Bật/Tắt Menu)
+local MainButton = Instance.new("TextButton")
+MainButton.Name = "MainButton"
+MainButton.Size = UDim2.new(0, 70, 0, 30)
+MainButton.Position = UDim2.new(0.1, 0, 0.2, 0)
+MainButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainButton.Text = "VDZ"
+MainButton.TextColor3 = Color3.fromRGB(0, 255, 128)
+MainButton.Font = Enum.Font.SourceSansBold
+MainButton.TextSize = 16
+MainButton.Parent = ScreenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 5)
+corner.Parent = MainButton
+
+-- 3. Menu bé có thể cuộn
+local MainMenu = Instance.new("ScrollingFrame")
+MainMenu.Name = "MainMenu"
+MainMenu.Size = UDim2.new(0, 170, 0, 200)
+MainMenu.Position = UDim2.new(0.1, 0, 0.2, 40)
+MainMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainMenu.CanvasSize = UDim2.new(0, 0, 0, 320) 
+MainMenu.ScrollBarThickness = 5
+MainMenu.Visible = false 
+MainMenu.Parent = ScreenGui
+
+local menuCorner = corner:Clone()
+menuCorner.Parent = MainMenu
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = MainMenu
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+
+-- [MỚI] 4. Nút hình tròn dấu cộng để di chuyển Menu (Nằm sát cạnh phải Menu)
+local DragCircle = Instance.new("TextButton")
+DragCircle.Name = "DragCircle"
+DragCircle.Size = UDim2.new(0, 25, 0, 25)
+-- Đặt vị trí ban đầu ngay bên cạnh Menu
+DragCircle.Position = UDim2.new(0.1, 175, 0.2, 40)
+DragCircle.BackgroundColor3 = Color3.fromRGB(0, 255, 128)
+DragCircle.Text = "+"
+DragCircle.TextColor3 = Color3.fromRGB(25, 25, 25)
+DragCircle.Font = Enum.Font.SourceSansBold
+DragCircle.TextSize = 20
+DragCircle.Visible = false -- Ẩn/hiện đồng bộ với Menu
+DragCircle.Parent = ScreenGui
+
+local circleCorner = Instance.new("UICorner")
+circleCorner.CornerRadius = UDim.new(1, 0) -- Tạo hình tròn hoàn hảo
+circleCorner.Parent = DragCircle
+
+-- 5. Các nút chức năng trong Menu cuộn
+local EspAllButton = Instance.new("TextButton")
+EspAllButton.Size = UDim2.new(1, 0, 0, 35)
+EspAllButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+EspAllButton.Text = "ESP Tất Cả: TẮT"
+EspAllButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspAllButton.Font = Enum.Font.SourceSansBold
+EspAllButton.TextSize = 13
+EspAllButton.Parent = MainMenu
+local btnCorner1 = corner:Clone() btnCorner1.Parent = EspAllButton
+
+local EspTargetButton = Instance.new("TextButton")
+EspTargetButton.Size = UDim2.new(1, 0, 0, 35)
+EspTargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+EspTargetButton.Text = "ESP 1 Người: TẮT"
+EspTargetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspTargetButton.Font = Enum.Font.SourceSansBold
+EspTargetButton.TextSize = 13
+EspTargetButton.Parent = MainMenu
+local btnCorner2 = corner:Clone() btnCorner2.Parent = EspTargetButton
+
+local NameInput = Instance.new("TextBox")
+NameInput.Size = UDim2.new(1, 0, 0, 35)
+NameInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+NameInput.Text = ""
+NameInput.PlaceholderText = "Nhập tên vào đây..."
+NameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+NameInput.Font = Enum.Font.SourceSans
+NameInput.TextSize = 14
+NameInput.ClearTextOnFocus = false
+NameInput.Parent = MainMenu
+local inputCorner = corner:Clone() inputCorner.Parent = NameInput
+
+-- Ô nhập chỉ số Tốc độ (Tự động canh lề theo UIListLayout)
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Size = UDim2.new(1, 0, 0, 35)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SpeedInput.Text = "50" -- Tốc độ gợi ý sẵn
+SpeedInput.PlaceholderText = "Nhập tốc độ (VD: 50)..."
+SpeedInput.TextColor3 = Color3.fromRGB(0, 255, 255) -- Chữ màu xanh dương dễ nhìn
+SpeedInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+SpeedInput.Font = Enum.Font.SourceSans
+SpeedInput.TextSize = 13
+SpeedInput.ClearTextOnFocus = false
+SpeedInput.Parent = MainMenu
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 5)
+inputCorner.Parent = SpeedInput
+
+-- Nút Bật/Tắt trạng thái Chạy nhanh
+local SpeedButton = Instance.new("TextButton")
+SpeedButton.Size = UDim2.new(1, 0, 0, 35)
+SpeedButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SpeedButton.Text = "Bật Chạy Nhanh: TẮT"
+SpeedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedButton.Font = Enum.Font.SourceSansBold
+SpeedButton.TextSize = 13
+SpeedButton.Parent = MainMenu
+
+local btnCorner = inputCorner:Clone()
+btnCorner.Parent = SpeedButton
+
+-- Nút Bật/Tắt trạng thái Nhảy trên không
+local InfJumpButton = Instance.new("TextButton")
+InfJumpButton.Size = UDim2.new(1, 0, 0, 35)
+InfJumpButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+InfJumpButton.Text = "Nhảy Trên Không: TẮT"
+InfJumpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfJumpButton.Font = Enum.Font.SourceSansBold
+InfJumpButton.TextSize = 13
+InfJumpButton.Parent = MainMenu
+
+local jumpCorner = Instance.new("UICorner")
+jumpCorner.CornerRadius = UDim.new(0, 5)
+jumpCorner.Parent = InfJumpButton
+
+-- 6. Logic xử lý ESP (Đảm bảo hoạt động)
+local espAllEnabled = false
+local espTargetEnabled = false
+local connectedPlayers = {}
+
+local function BoxPart(part, color)
+    if not part:IsA("BasePart") or part.Name == "HumanoidRootPart" then return end
+    if part:FindFirstChild("VDZ_PartESP") then return end
+    
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "VDZ_PartESP"
+    box.Size = part.Size + Vector3.new(0.05, 0.05, 0.05)
+    box.Color3 = color
+    box.AlwaysOnTop = true
+    box.ZIndex = 5
+    box.Transparency = 0.5
+    box.Adornee = part
+    box.Parent = part
+end
+
+local function applyESP(targetPlayer)
+    if targetPlayer == player then return end
+    local function setupChar(character)
+        character:WaitForChild("HumanoidRootPart")
+        local function checkAndApply()
+            local shouldEsp = false
+            if espAllEnabled then
+                shouldEsp = true
+            elseif espTargetEnabled then
+                local typedName = string.lower(NameInput.Text)
+                local pName = string.lower(targetPlayer.Name)
+                local pDisp = string.lower(targetPlayer.DisplayName)
+                if typedName ~= "" and (string.find(pName, typedName) or string.find(pDisp, typedName)) then
+                    shouldEsp = true
+                end
+            end
+            
+            if shouldEsp then
+                for _, part in pairs(character:GetChildren()) do BoxPart(part, Color3.fromRGB(0, 255, 128)) end
+            else
+                for _, part in pairs(character:GetChildren()) do
+                    local box = part:FindFirstChild("VDZ_PartESP")
+                    if box then box:Destroy() end
+                end
+            end
+        end
+
+        checkAndApply()
+        local refreshLoop
+        refreshLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not character or not character.Parent then refreshLoop:Disconnect() return end
+            checkAndApply()
+        end)
+    end
+    if targetPlayer.Character then setupChar(targetPlayer.Character) end
+    local conn = targetPlayer.CharacterAdded:Connect(setupChar)
+    connectedPlayers[targetPlayer] = conn
+end
+
+for _, p in pairs(Players:GetPlayers()) do applyESP(p) end
+Players.PlayerAdded:Connect(applyESP)
+
+EspAllButton.MouseButton1Click:Connect(function()
+    espAllEnabled = not espAllEnabled
+    if espAllEnabled then
+        espTargetEnabled = false
+        EspTargetButton.Text = "ESP 1 Người: TẮT"
+        EspTargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        EspAllButton.Text = "ESP Tất Cả: BẬT"
+        EspAllButton.BackgroundColor3 = Color3.fromRGB(0, 150, 70)
+    else
+        EspAllButton.Text = "ESP Tất Cả: TẮT"
+        EspAllButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end)
+
+EspTargetButton.MouseButton1Click:Connect(function()
+    espTargetEnabled = not espTargetEnabled
+    if espTargetEnabled then
+        espAllEnabled = false
+        EspAllButton.Text = "ESP Tất Cả: TẮT"
+        EspAllButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        EspTargetButton.Text = "ESP 1 Người: BẬT"
+        EspTargetButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    else
+        EspTargetButton.Text = "ESP 1 Người: TẮT"
+        EspTargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+end)
+
+-- LOGIC XỬ LÝ CHẠY NHANH
+local speedEnabled = false
+local defaultSpeed = 16 -- Tốc độ mặc định của Roblox
+
+local function updateSpeed()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if speedEnabled then
+                -- Lấy số từ ô nhập, nếu nhập sai chữ sẽ tự lấy tốc độ mặc định
+                local targetSpeed = tonumber(SpeedInput.Text) or defaultSpeed
+                humanoid.WalkSpeed = targetSpeed
+            else
+                humanoid.WalkSpeed = defaultSpeed
+            end
+        end
+    end
+end
+
+-- Sự kiện khi ấn nút Bật/Tắt
+SpeedButton.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    if speedEnabled then
+        SpeedButton.Text = "Chạy Nhanh: BẬT"
+        SpeedButton.BackgroundColor3 = Color3.fromRGB(0, 120, 200) -- Đổi sang màu xanh dương khi bật
+    else
+        SpeedButton.Text = "Chạy Nhanh: TẮT"
+        SpeedButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50) -- Trả về màu xám khi tắt
+    end
+    updateSpeed() -- Cập nhật tốc độ ngay lập tức
+end)
+
+-- Vòng lặp quét liên tục để giữ tốc độ khi hồi sinh hoặc khi bị game ép reset
+game:GetService("RunService").Heartbeat:Connect(function()
+    if speedEnabled then
+        updateSpeed()
+    end
+end)
+
+-- LOGIC XỬ LÝ NHẢY TRÊN KHÔNG (INFINITE JUMP)
+local infJumpEnabled = false
+local jumpConnection = nil
+
+-- Hàm xử lý kích hoạt lực nhảy
+local function doInfJump()
+    if infJumpEnabled then
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                -- Ép nhân vật đổi trạng thái sang đang nhảy và tạo lực hướng lên
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end
+end
+
+-- Sự kiện khi ấn nút Bật/Tắt
+InfJumpButton.MouseButton1Click:Connect(function()
+    infJumpEnabled = not infJumpEnabled
+    if infJumpEnabled then
+        InfJumpButton.Text = "Nhảy Trên Không: BẬT"
+        InfJumpButton.BackgroundColor3 = Color3.fromRGB(130, 50, 180) -- Màu tím khi bật cho dễ phân biệt
+        
+        -- Lắng nghe sự kiện bấm nút Nhảy (Spacebar trên PC / nút Nhảy trên Mobile)
+        jumpConnection = game:GetService("UserInputService").JumpRequest:Connect(doInfJump)
+    else
+        InfJumpButton.Text = "Nhảy Trên Không: TẮT"
+        InfJumpButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        
+        -- Hủy kết nối sự kiện để nhân vật trở lại bình thường
+        if jumpConnection then
+            jumpConnection:Disconnect()
+            jumpConnection = nil
+        end
+    end
+end)
+
+-- 7. Cơ chế Kéo Thả cải tiến (Kéo nút tròn để dịch chuyển cả Menu)
+local function makeDraggable(clickObject, followObject)
+    local dragging, dragInput, dragStart, startPos
+    clickObject.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = followObject.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    clickObject.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            followObject.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- Kéo Nút VDZ độc lập
+local function makeSingleDraggable(guiObject)
+    makeDraggable(guiObject, guiObject)
+end
+makeSingleDraggable(MainButton)
+
+-- Kéo Nút tròn dấu cộng sẽ dịch chuyển Menu, đồng thời nút tròn di chuyển theo
+makeDraggable(DragCircle, MainMenu)
+MainMenu:GetPropertyChangedSignal("Position"):Connect(function()
+    DragCircle.Position = UDim2.new(MainMenu.Position.X.Scale, MainMenu.Position.X.Offset + 175, MainMenu.Position.Y.Scale, MainMenu.Position.Y.Offset)
+end)
+
+-- Bật/tắt ẩn hiện Menu và Nút Tròn đồng bộ khi ấn VDZ
+MainButton.MouseButton1Click:Connect(function()
+    local isVisible = not MainMenu.Visible
+    MainMenu.Visible = isVisible
+    DragCircle.Visible = isVisible
+end)
