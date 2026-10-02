@@ -1,0 +1,93 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("StarterGui")
+local LocalPlayer = Players.LocalPlayer
+
+-- Hàm tự động tạo giao diện và chạy chữ "TROLL VIỆT NAM"
+local function batDauChuChay()
+	-- Tự động tạo ScreenGui chứa chữ
+	local marqueeGui = Instance.new("ScreenGui")
+	marqueeGui.Name = "MarqueeGui"
+	marqueeGui.ResetOnSpawn = false
+	marqueeGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+	-- Tự động tạo TextLabel
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Name = "TextLabel"
+	textLabel.Text = "TROLL VIỆT NAM"
+	textLabel.Size = UDim2.new(0.6, 0, 0.15, 0) -- Kích thước khung chữ
+	textLabel.Font = Enum.Font.SourceSansBold -- Kiểu chữ đậm
+	textLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Màu đỏ rực
+	textLabel.BackgroundTransparency = 1 -- Nền trong suốt
+	textLabel.TextScaled = true -- Tự co giãn chữ vừa màn hình
+	textLabel.Visible = true
+	textLabel.Parent = marqueeGui
+
+	-- Vòng lặp vô hạn chạy chữ từ phải sang trái không thể tắt
+	task.spawn(function()
+		while true do
+			-- Xuất hiện ở cạnh phải
+			textLabel.Position = UDim2.new(1, 0, 0.4, 0) 
+			-- Đích đến ở cạnh trái
+			local targetPosition = UDim2.new(-0.6, 0, 0.4, 0)
+			local tweenInfo = TweenInfo.new(4, Enum.EasingStyle.Linear) -- Chạy hết 4 giây
+			
+			local tween = TweenService:Create(textLabel, tweenInfo, {Position = targetPosition})
+			tween:Play()
+			
+			tween.Completed:Wait() -- Chạy xong dòng cũ mới lặp lại dòng mới
+		end
+	end)
+end
+
+-- Hàm thực hiện hiệu ứng hóa đá
+local function hoaDaNhanVat()
+	local character = LocalPlayer.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	
+	if humanoid and rootPart then
+		-- Khóa tính năng Reset nhân vật trong Menu hệ thống
+		task.spawn(function()
+			local success = false
+			while not success do
+				local s, err = pcall(function()
+					CoreGui:SetCore("ResetButtonCallback", false)
+				end)
+				success = s
+				task.wait(0.5)
+			end
+		end)
+
+		-- 1. Đóng băng di chuyển và nhảy
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		
+		-- 2. Khóa chặt nhân vật tại chỗ (không bị rơi, không bị đẩy)
+		rootPart.Anchored = true
+		
+		-- 3. Biến toàn bộ cơ thể thành chất liệu đá và màu xám
+		for _, part in ipairs(character:GetChildren()) do
+			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+				part.Material = Enum.Material.Slate -- Chất liệu đá phiến
+				part.Color = Color3.fromRGB(120, 120, 120) -- Màu xám đá
+				
+				-- Nhân vật cứng đơ hoàn toàn không thể cử động các khớp:
+				part.Anchored = true 
+			elseif part:IsA("Accessory") then
+				-- Hóa đá cả mũ, tóc hoặc phụ kiện nếu có
+				local handle = part:FindFirstChild("Handle")
+				if handle and handle:IsA("BasePart") then
+					handle.Material = Enum.Material.Slate
+					handle.Color = Color3.fromRGB(120, 120, 120)
+					handle.Anchored = true
+				end
+			end
+		end
+
+		-- 4. Kích hoạt hiệu ứng chữ chạy qua màn hình
+		batDauChuChay()
+	end
+end
